@@ -2,4 +2,3 @@
 *.pth
 .ipynb_checkpoints/
 .DS_Store
-files/
