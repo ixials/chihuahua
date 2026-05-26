@@ -1,9 +1,12 @@
-*.pt
-*.pth
-.ipynb_checkpoints/
 .DS_Store
-__pycache__/venv/
+.vscode/
+lib64/
 bin/
 lib/
-lib64/
+share/
+__pycache__/
+*.pyc
+*.mp4
+*.pt
+.lock
 pyvenv.cfg
