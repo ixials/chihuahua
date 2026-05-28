@@ -1,6 +1,8 @@
 .DS_Store
 .vscode/
 lib64/
+__pycache__/venv/
+__pycache__/
 bin/
 lib/
 share/
@@ -11,3 +13,4 @@ __pycache__/
 *.wav
 .lock
 pyvenv.cfg
+outputs/
