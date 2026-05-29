@@ -40,6 +40,30 @@ outputs/<video_name>/
 
 **Intermediate artifacts:** everything under `intermediate/` — used by the pipeline between stages; useful for debugging thresholds and PANNs scores.
 
+## Fast tuning (after first run)
+
+PANNs inference is slow. Once you have `panns_scores.csv` on disk you can skip it and iterate quickly on thresholds and detection settings.
+
+```bash
+# One full run first (slow - includes PANNs)
+python run_bark_detection.py --video files/your_clip.mp4
+
+# Fast retune - skip PANNs, try new threshold
+python run_bark_detection.py --video files/your_clip.mp4 --from-stage timeline --threshold 0.30
+
+# Try max_bark_dog mode
+python run_bark_detection.py --video files/your_clip.mp4 --from-stage timeline --threshold 0.30 --combined-mode max_bark_dog
+```
+
+Available tuning flags:
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--from-stage STAGE` | Run from this stage through viz, reusing earlier outputs | — |
+| `--threshold FLOAT` | Override `barkseq_threshold` | 0.42 |
+| `--combined-mode MODE` | `bark` or `max_bark_dog` | `bark` |
+| `--merge-gap FLOAT` | Override `merge_gap_sec` | 0.5 |
+
 ## Tests
 
 ```bash

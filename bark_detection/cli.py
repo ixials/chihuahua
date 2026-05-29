@@ -425,6 +425,31 @@ _DISPATCH = {
 }
 
 
+def build_config(
+    *,
+    threshold: Optional[float] = None,
+    combined_mode: Optional[str] = None,
+    merge_gap: Optional[float] = None,
+) -> BarkConfig:
+    cfg = BarkConfig()
+    if threshold is not None:
+        cfg.barkseq_threshold = threshold
+    if combined_mode is not None:
+        cfg.combined_bark_mode = combined_mode
+    if merge_gap is not None:
+        cfg.merge_gap_sec = merge_gap
+    return cfg
+
+
+def resolve_stages(*, stage: str, from_stage: Optional[str] = None) -> list:
+    if from_stage is not None:
+        start = _STAGE_ORDER.index(from_stage)
+        return _STAGE_ORDER[start:]
+    if stage == "all":
+        return list(_STAGE_ORDER)
+    return [stage]
+
+
 def main(argv: Optional[list] = None) -> int:
     parser = argparse.ArgumentParser(prog="run_bark_detection")
     parser.add_argument("--video", required=True, type=Path)
@@ -451,19 +476,53 @@ def main(argv: Optional[list] = None) -> int:
             "score",
         ],
     )
+    parser.add_argument(
+        "--from-stage",
+        dest="from_stage",
+        default=None,
+        choices=_STAGE_ORDER,
+        help="Run from this stage through viz (skips earlier stages).",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=None,
+        help="Override barkseq_threshold.",
+    )
+    parser.add_argument(
+        "--combined-mode",
+        dest="combined_mode",
+        default=None,
+        choices=["bark", "max_bark_dog"],
+        help="Override combined_bark_mode.",
+    )
+    parser.add_argument(
+        "--merge-gap",
+        dest="merge_gap",
+        type=float,
+        default=None,
+        help="Override merge_gap_sec.",
+    )
     args = parser.parse_args(argv)
+
+    if args.from_stage is not None and args.stage != "all":
+        parser.error("--from-stage and --stage cannot be used together")
 
     video_path: Path = args.video
     if not video_path.exists():
         parser.error(f"video not found: {video_path}")
 
-    cfg = BarkConfig()
+    cfg = build_config(
+        threshold=args.threshold,
+        combined_mode=args.combined_mode,
+        merge_gap=args.merge_gap,
+    )
 
     video_stem = video_path.stem
     run_dir = args.output_dir / video_stem
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    stages_to_run = _STAGE_ORDER if args.stage == "all" else [args.stage]
+    stages_to_run = resolve_stages(stage=args.stage, from_stage=args.from_stage)
 
     for stage in stages_to_run:
         _DISPATCH[stage](video_path, run_dir, cfg)
