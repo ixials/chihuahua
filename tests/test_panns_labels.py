@@ -40,6 +40,10 @@ def test_resolve_label_mapping_finds_all_bark_labels():
 
 def test_high_recall_defaults():
     cfg = BarkConfig()
-    assert cfg.barkseq_threshold == 0.30
+    assert cfg.barkseq_threshold == 0.4
     assert cfg.combined_bark_mode == "max_bark_dog"
-    assert cfg.merge_gap_sec == 0.35
+    assert cfg.merge_gap_sec == 0.33
+    assert cfg.short_window_size_sec == 0.5
+    assert cfg.short_hop_size_sec == 0.1
+    assert cfg.audio_normalize is True
+    assert cfg.audio_normalize_target_peak == 0.9

@@ -9,6 +9,11 @@ class BarkConfig:
     # M2 (PANNs overlapping windows)
     window_size_sec: float = 1.0
     hop_size_sec: float = 0.25
+    short_window_size_sec: float = 0.5
+    short_hop_size_sec: float = 0.1
+    short_window_weight: float = 1.0
+    audio_normalize: bool = True
+    audio_normalize_target_peak: float = 0.9
     # M3 (PANNs inference)
     panns_model_name: str = "Cnn14_16k"
     panns_device: str = "cpu"

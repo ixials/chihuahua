@@ -139,7 +139,7 @@ def run_vocalization_inspect(
     dog_col = label_to_column("Dog")
 
     tagger = build_audio_tagging_16k(cfg)
-    wav, sr = _load_wav_mono(wav_path)
+    wav, sr = _load_wav_mono(wav_path, cfg)
     if sr != cfg.target_sample_rate_hz:
         raise ValueError(
             f"expected sample rate {cfg.target_sample_rate_hz}, got {sr}"

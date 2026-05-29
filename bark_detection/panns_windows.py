@@ -7,15 +7,24 @@ from bark_detection.config import BarkConfig
 _END_TOLERANCE_SEC = 1e-6
 
 
-def generate_windows(duration_sec: float, cfg: BarkConfig) -> pd.DataFrame:
+def generate_windows(
+    duration_sec: float,
+    cfg: BarkConfig,
+    *,
+    window_size_sec: float | None = None,
+    hop_size_sec: float | None = None,
+) -> pd.DataFrame:
     """Build overlapping windows covering [0, duration_sec].
 
     Windows start at t=0 and advance by ``hop_size_sec`` while
     ``start_time_sec < duration_sec``. Each row stores true audio bounds
     (no padding): ``end_time_sec = min(start + window_size_sec, duration_sec)``.
+
+    Optional ``window_size_sec`` / ``hop_size_sec`` override ``cfg`` defaults
+    (e.g. short grids via ``cfg.short_window_size_sec``).
     """
-    window_size = cfg.window_size_sec
-    hop_size = cfg.hop_size_sec
+    window_size = cfg.window_size_sec if window_size_sec is None else window_size_sec
+    hop_size = cfg.hop_size_sec if hop_size_sec is None else hop_size_sec
 
     rows: list[dict[str, float | int]] = []
     window_id = 0

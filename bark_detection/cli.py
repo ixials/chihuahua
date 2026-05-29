@@ -47,10 +47,19 @@ def _run_windows(video: Path, run_dir: Path, cfg: BarkConfig) -> None:
     meta = json.loads(meta_path.read_text())
     duration_sec = float(meta["duration_sec"])
 
+    inter = intermediate_dir(run_dir)
     windows_df = panns_windows.generate_windows(duration_sec, cfg)
-    windows_df.to_csv(intermediate_dir(run_dir) / "panns_windows.csv", index=False)
+    windows_df.to_csv(inter / "panns_windows.csv", index=False)
 
-    print(f"windows: {len(windows_df)}")
+    short_windows_df = panns_windows.generate_windows(
+        duration_sec,
+        cfg,
+        window_size_sec=cfg.short_window_size_sec,
+        hop_size_sec=cfg.short_hop_size_sec,
+    )
+    short_windows_df.to_csv(inter / "panns_short_windows.csv", index=False)
+
+    print(f"windows: {len(windows_df)} long, {len(short_windows_df)} short")
 
 
 def _run_panns(video: Path, run_dir: Path, cfg: BarkConfig) -> None:
