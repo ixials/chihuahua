@@ -20,6 +20,7 @@ from bark_detection import clips
 from bark_detection import frames
 from bark_detection import noise
 from bark_detection import timeline as timeline_module
+from bark_detection import inspect_labels as inspect_labels_module
 from bark_detection.paths import intermediate_dir
 
 
@@ -391,6 +392,17 @@ def _run_score(video: Path, run_dir: Path, cfg: BarkConfig) -> None:
     )
 
 
+def _run_inspect(
+    video: Path,
+    run_dir: Path,
+    cfg: BarkConfig,
+    at_times: Optional[list] = None,
+) -> None:
+    inspect_labels_module.run_vocalization_inspect(
+        run_dir, cfg, at_times=at_times, write_plot=True
+    )
+
+
 # Prompt 1–6 PANNs default: extract → … → frames → viz.
 # Legacy RMS stages remain individually invocable via --stage.
 _STAGE_ORDER = [
@@ -469,12 +481,22 @@ def main(argv: Optional[list] = None) -> int:
             "clips",
             "frames",
             "viz",
+            "inspect",
             "rms",
             "threshold",
             "candidates",
             "events",
             "score",
         ],
+    )
+    parser.add_argument(
+        "--at-time",
+        dest="at_times",
+        metavar="FLOAT",
+        type=float,
+        action="append",
+        default=None,
+        help="Query a specific time (seconds) in the inspect stage. Repeatable.",
     )
     parser.add_argument(
         "--from-stage",
@@ -522,10 +544,12 @@ def main(argv: Optional[list] = None) -> int:
     run_dir = args.output_dir / video_stem
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    stages_to_run = resolve_stages(stage=args.stage, from_stage=args.from_stage)
-
-    for stage in stages_to_run:
-        _DISPATCH[stage](video_path, run_dir, cfg)
+    if args.stage == "inspect":
+        _run_inspect(video_path, run_dir, cfg, at_times=args.at_times)
+    else:
+        stages_to_run = resolve_stages(stage=args.stage, from_stage=args.from_stage)
+        for stage in stages_to_run:
+            _DISPATCH[stage](video_path, run_dir, cfg)
 
     print(f"run_dir: {run_dir}")
     return 0

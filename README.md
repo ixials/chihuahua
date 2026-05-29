@@ -66,6 +66,30 @@ Available tuning flags:
 | `--combined-mode MODE` | `bark` or `max_bark_dog` | `max_bark_dog` |
 | `--merge-gap FLOAT` | Override `merge_gap_sec` | 0.35 |
 
+## Label inspection (Phase 2)
+
+Diagnose missed or false-positive detections by examining individual PANNs vocalization label scores per window.
+
+```bash
+# After extract + windows exist (or after a full run):
+python run_bark_detection.py --video files/your_clip.mp4 --stage inspect
+
+# Query a missed sound at 2.3 s:
+python run_bark_detection.py --video files/your_clip.mp4 --stage inspect --at-time 2.3
+
+# Query multiple times:
+python run_bark_detection.py --video files/your_clip.mp4 --stage inspect --at-time 2.3 --at-time 5.1
+```
+
+**Outputs:**
+
+| Path | Description |
+|------|-------------|
+| `intermediate/vocalization_scores.csv` | Per-window scores for Bark, Yip, Bow-wow, Howl, Growling, Whimper (dog), Dog, plus `vocalization_max_score` and `max_bark_dog_score` aggregates. |
+| `debug/vocalization_inspect.png` | Line plot of all seven label scores over time with the detection threshold. |
+
+**`--at-time FLOAT`** (repeatable) — prints a human-readable summary for the window nearest to each queried time, showing every label score and flagging those above the threshold.
+
 ## Tests
 
 ```bash

@@ -1,11 +1,33 @@
 """Debug visualization for the bark detection pipeline."""
 
+from __future__ import annotations
+
+import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from bark_detection.config import BarkConfig
+from bark_detection.panns_inference import VOCALIZATION_LABELS
+
+_INSPECT_LABELS: list[str] = VOCALIZATION_LABELS + ["Dog"]
+
+# Distinct colours for each inspect label (tab10 palette order)
+_INSPECT_COLORS = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+]
+
+
+def _label_to_column(label: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
+    return f"{slug}_score"
 
 SCORE_SERIES = [
     ("combined_bark_score", "#E53935", 2.0, "combined_bark"),
@@ -182,6 +204,53 @@ def plot_rms(
         ax.set_title(title)
     ax.grid(True, alpha=0.4)
     ax.legend(loc="upper right", fontsize=8)
+
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
+def plot_vocalization_inspect(
+    df: pd.DataFrame,
+    out_path: Path,
+    cfg: BarkConfig,
+    *,
+    title: str | None = None,
+) -> None:
+    """Plot individual PANNs label scores for all INSPECT_LABELS over time.
+
+    Each label gets its own line.  A dashed threshold line marks
+    cfg.barkseq_threshold.  Saves to *out_path* as a PNG.
+    """
+    fig, ax = plt.subplots(figsize=(13, 4))
+
+    for label, color in zip(_INSPECT_LABELS, _INSPECT_COLORS):
+        col = _label_to_column(label)
+        if col in df.columns:
+            ax.plot(
+                df["center_time_sec"],
+                df[col],
+                linewidth=1.2,
+                color=color,
+                label=label,
+                alpha=0.85,
+            )
+
+    ax.axhline(
+        cfg.barkseq_threshold,
+        linestyle="--",
+        linewidth=1.2,
+        color="#212121",
+        label=f"threshold ({cfg.barkseq_threshold:.2f})",
+    )
+
+    ax.set_xlabel("time (s)")
+    ax.set_ylabel("score")
+    ax.set_ylim(-0.02, 1.02)
+    ax.set_title(title or "Vocalization label scores")
+    ax.grid(True, alpha=0.35)
+    ax.legend(loc="upper right", fontsize=8, ncol=2)
 
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)

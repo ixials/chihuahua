@@ -24,9 +24,18 @@ CHECKPOINT_URL = (
 )
 MIN_CHECKPOINT_BYTES = 300_000_000
 
+VOCALIZATION_LABELS: list[str] = [
+    "Bark",
+    "Yip",
+    "Bow-wow",
+    "Howl",
+    "Growling",
+    "Whimper (dog)",
+]
+
 SCORE_COLUMN_LABELS: dict[str, list[str]] = {
     "dog": ["Dog"],
-    "bark": ["Bark", "Yip", "Bow-wow", "Howl", "Growling", "Whimper (dog)"],
+    "bark": VOCALIZATION_LABELS,
     "animal": ["Animal"],
     "speech": ["Speech"],
     "music": ["Music"],
