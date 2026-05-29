@@ -26,7 +26,7 @@ MIN_CHECKPOINT_BYTES = 300_000_000
 
 SCORE_COLUMN_LABELS: dict[str, list[str]] = {
     "dog": ["Dog"],
-    "bark": ["Bark", "Yip", "Bow-wow"],
+    "bark": ["Bark", "Yip", "Bow-wow", "Howl", "Growling", "Whimper (dog)"],
     "animal": ["Animal"],
     "speech": ["Speech"],
     "music": ["Music"],

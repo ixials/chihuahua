@@ -97,3 +97,17 @@
 **Decision:** (b) — `debug/panns_score_timeline.png` (5 score lines + threshold 0.42) and `debug/barkseq_overlay.png` (same + shaded event spans + peak dots). Legacy RMS plot stays in `legacy_rms/`.
 **Why:** Overlay makes M5 segmentation visually auditable on `dogs1`; threshold line shows why t=1.0 s trough stays below detection.
 **Revisit if:** plots get crowded on long clips; add clip-span shading or downsample timeline.
+
+## 2026-05-29 — Vocalization Phase 1: expanded bark_score labels
+**Context:** Whines, howls, and growls were missed because `bark_score` only used `max(Bark, Yip, Bow-wow)`.
+**Options:** (a) keep three labels; (b) add Howl, Growling, Whimper (dog); (c) add generic Whimper (index 24) with lower weight.
+**Decision:** (b) — `bark_score = max(Bark, Yip, Bow-wow, Howl, Growling, Whimper (dog))`; indices resolved at runtime (Howl **77**, Growling **79**, Whimper (dog) **80** on standard AudioSet list).
+**Why:** AudioSet provides distinct dog-vocal classes; max() matches existing pattern. Generic `Whimper` omitted to reduce human-whimper false positives.
+**Revisit if:** recall still low on whines; consider separate `vocalization_score` column or weighted blend.
+
+## 2026-05-29 — Vocalization Phase 1: high-recall detection defaults
+**Context:** Defaults were tuned for precision on `dogs1` (threshold 0.42, `combined_bark_mode="bark"`, merge_gap 0.5 s). User priority is recall for quiet/short vocalizations.
+**Options:** (a) keep old defaults, expose changes via CLI only; (b) adopt high-recall defaults globally.
+**Decision:** (b) — `barkseq_threshold=0.30`, `combined_bark_mode="max_bark_dog"`, `merge_gap_sec=0.35`. CLI flags still override for ablation.
+**Why:** Lower threshold catches weak bark windows; `max(bark, dog)` helps when vocal labels are quiet but dog presence is strong; tighter merge gap reduces over-merging separate yip chains. Panting false positives acceptable; M6 noise flags and confidence remain for downstream filtering.
+**Revisit if:** annotated eval shows excess false positives; per-clip calibration or revert to `bark` mode for production exports.

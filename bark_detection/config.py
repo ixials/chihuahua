@@ -13,10 +13,10 @@ class BarkConfig:
     panns_model_name: str = "Cnn14_16k"
     panns_device: str = "cpu"
     # M4 (bark score timeline)
-    combined_bark_mode: str = "bark"  # or "max_bark_dog"
+    combined_bark_mode: str = "max_bark_dog"  # or "bark" for precision-first
     # M5 (Barkseq detection from timeline)
-    barkseq_threshold: float = 0.42  # calibrated on dogs1 (bark-only combined)
-    merge_gap_sec: float = 0.5
+    barkseq_threshold: float = 0.30  # high-recall default (was 0.42 on dogs1 bark-only)
+    merge_gap_sec: float = 0.35
     # M6 (PANNs noise flagging on Barkseqs)
     speech_noise_threshold: float = 0.15
     music_noise_threshold: float = 0.15

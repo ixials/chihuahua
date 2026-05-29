@@ -40,6 +40,8 @@ outputs/<video_name>/
 
 **Intermediate artifacts:** everything under `intermediate/` — used by the pipeline between stages; useful for debugging thresholds and PANNs scores.
 
+**Default detection (vocalization Phase 1):** expanded dog-vocal PANNs labels (Bark, Yip, Bow-wow, Howl, Growling, Whimper (dog)), threshold **0.30**, combined mode **`max_bark_dog`**, merge gap **0.35 s**. Use CLI flags below to revert toward precision-first settings.
+
 ## Fast tuning (after first run)
 
 PANNs inference is slow. Once you have `panns_scores.csv` on disk you can skip it and iterate quickly on thresholds and detection settings.
@@ -60,9 +62,9 @@ Available tuning flags:
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--from-stage STAGE` | Run from this stage through viz, reusing earlier outputs | — |
-| `--threshold FLOAT` | Override `barkseq_threshold` | 0.42 |
-| `--combined-mode MODE` | `bark` or `max_bark_dog` | `bark` |
-| `--merge-gap FLOAT` | Override `merge_gap_sec` | 0.5 |
+| `--threshold FLOAT` | Override `barkseq_threshold` | 0.30 |
+| `--combined-mode MODE` | `bark` or `max_bark_dog` | `max_bark_dog` |
+| `--merge-gap FLOAT` | Override `merge_gap_sec` | 0.35 |
 
 ## Tests
 
