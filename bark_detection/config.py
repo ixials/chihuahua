@@ -15,17 +15,17 @@ class BarkConfig:
     # M4 (bark score timeline)
     combined_bark_mode: str = "max_bark_dog"  # or "bark" for precision-first
     # M5 (Barkseq detection from timeline)
-    barkseq_threshold: float = 0.30  # high-recall default (was 0.42 on dogs1 bark-only)
-    merge_gap_sec: float = 0.35
+    barkseq_threshold: float = 0.4  # high-recall default (was 0.42 on dogs1 bark-only)
+    merge_gap_sec: float = 0.33
     # M6 (PANNs noise flagging on Barkseqs)
-    speech_noise_threshold: float = 0.15
-    music_noise_threshold: float = 0.15
+    speech_noise_threshold: float = 0.1
+    music_noise_threshold: float = 0.1
     # M7 (PANNs Barkseq export confidence)
-    speech_penalty: float = 0.3
-    music_penalty: float = 0.3
+    speech_penalty: float = 0.6
+    music_penalty: float = 0.6
     # M8 (Barkseq WAV clips)
-    clip_pre_context_sec: float = 0.25
-    clip_post_context_sec: float = 0.25
+    clip_pre_context_sec: float = 0.20
+    clip_post_context_sec: float = 0.20
     prevent_clip_overlap: bool = True
     # M9 (frame alignment)
     pre_context_sec: float = 0.5
@@ -41,7 +41,7 @@ class BarkConfig:
     percentile: float = 90.0
     # M5
     merge_gap_ms: int = 200
-    min_duration_ms: int = 80
+    min_duration_ms: int = 120
     max_duration_ms: int = 1200
     # Legacy RMS M6 (scoring.py — not used by PANNs pipeline)
     w_rms: float = 0.6
