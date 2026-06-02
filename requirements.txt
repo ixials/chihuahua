@@ -7,3 +7,11 @@ torchlibrosa==0.1.0
 panns-inference==0.1.1
 pytest==9.0.2
 librosa==0.11.0
+torchreid
+gdown
+tensorboard
+torchvision
+scikit-learn
+tqdm
+pillow
+scipy
