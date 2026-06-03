@@ -15,3 +15,4 @@ scikit-learn
 tqdm
 pillow
 scipy
+scenedetect==0.6.7
