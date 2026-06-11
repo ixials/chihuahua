@@ -14,3 +14,8 @@ __pycache__/
 .lock
 pyvenv.cfg
 outputs/
+dog_model/
+*.h5
+*.pb
+*.meta
+*.index
