@@ -16,3 +16,6 @@ tqdm
 pillow
 scipy
 scenedetect==0.6.7
+deeplabcut
+dlclibrary
+tensorflow
