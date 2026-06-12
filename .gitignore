@@ -1,16 +1,15 @@
 .DS_Store
 .vscode/
 lib64/
-__pycache__/venv/
 __pycache__/
 bin/
 lib/
 share/
-__pycache__/
 *.pyc
 *.mp4
 *.pt
 *.wav
+*.json
 .lock
 pyvenv.cfg
 outputs/
