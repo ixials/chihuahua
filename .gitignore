@@ -18,3 +18,7 @@ dog_model/
 *.pb
 *.meta
 *.index
+files/dlc-cache/
+*.h5
+*.pickle
+*.png
