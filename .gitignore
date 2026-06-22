@@ -9,7 +9,7 @@ share/
 *.mp4
 *.pt
 *.wav
-*.json
+raw_videos.json
 .lock
 pyvenv.cfg
 outputs/
@@ -18,7 +18,9 @@ dog_model/
 *.pb
 *.meta
 *.index
+vidsAndAnnotation
 files/dlc-cache/
+sentences.json
 *.h5
 *.pickle
 *.png
