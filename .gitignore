@@ -24,3 +24,6 @@ sentences.json
 *.h5
 *.pickle
 *.png
+bark_annotation_outputs/
+processed/
+*.json

@@ -1,3 +1,0 @@
-sample_id,clip_name,track_id,start_frame,end_frame,start_sec,end_sec,actual_duration_sec,label,label_text,crop_path,audio_path,needs_padding
-16_bark_000_t0_w0000,16_bark_000,0,0,44,0.000000,1.500000,1.500000,0,Not_Barking,crops/16_bark_000_track_0.mp4,audio/16_bark_000.wav,1
-16_bark_000_t1_w0000,16_bark_000,1,0,44,0.000000,1.500000,1.500000,1,Barking,crops/16_bark_000_track_1.mp4,audio/16_bark_000.wav,1

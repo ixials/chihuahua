@@ -19,7 +19,8 @@ processed/
     │   ├── 16_bark_000_track_0.mp4
     │   └── 16_bark_000_track_1.mp4
     ├── audio/
-    │   └── 16_bark_000.wav
+    │   ├── 16_bark_000_track_0.wav
+    │   └── 16_bark_000_track_1.wav
     └── training_windows.csv
 
 What it does:
@@ -29,7 +30,7 @@ What it does:
 - Creates one 224x224 moving crop MP4 per dog track.
 - Keeps the crop video on the original timeline.
 - Writes black frames only when that dog is outside or has no box.
-- Copies the existing WAV instead of extracting another one.
+- Trims the WAV per track using ffmpeg.
 - Creates training windows only inside continuous, visible, same-label sections.
 - Uses 2-second windows with 1-second stride by default.
 - Keeps shorter valid sections and marks them needs_padding=1.
@@ -58,6 +59,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
+import subprocess
 
 import cv2
 import numpy as np
@@ -223,13 +225,6 @@ def parse_annotations(
                 existing = track_frames[frame]
 
                 if existing.outside == 0 and annotation.outside == 0:
-                    # Both source tracks have a visible box on this frame.
-                    #
-                    # For a remap such as 2:0, track 0 is the target/canonical
-                    # track. Keep track 0 whenever both tracks are visible, and
-                    # use track 2 only when track 0 is outside or missing.
-                    #
-                    # Reverse the mapping (0:2) if track 2 should be preferred.
                     existing_is_target = (
                         existing.source_track_id == output_track_id
                     )
@@ -251,15 +246,12 @@ def parse_annotations(
                             f"{annotation.source_track_id}"
                         )
 
-                # If only the incoming annotation is visible, use it.
                 elif existing.outside == 1 and annotation.outside == 0:
                     track_frames[frame] = annotation
 
-                # If only the existing annotation is visible, keep it.
                 elif existing.outside == 0 and annotation.outside == 1:
                     pass
 
-                # If both are outside, prefer the canonical target record.
                 else:
                     existing_is_target = (
                         existing.source_track_id == output_track_id
@@ -333,6 +325,7 @@ def letterbox(image: np.ndarray, output_size: int) -> np.ndarray:
 def create_crop_videos(
     video_path: Path,
     tracks: Dict[int, Dict[int, Annotation]],
+    track_bounds: Dict[int, Tuple[int, int]],
     crops_dir: Path,
     padding: float,
     crop_size: int,
@@ -359,62 +352,81 @@ def create_crop_videos(
     }
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    writers: Dict[int, cv2.VideoWriter] = {}
+
+
+    # and each writer covers exactly its own frame range.
+    frame_count = 0
 
     try:
-        for track_id, crop_path in crop_paths.items():
+        for track_id in sorted(tracks):
+            if track_id not in track_bounds:
+                continue
+
+            track_start, track_end = track_bounds[track_id]
+
             writer = cv2.VideoWriter(
-                str(crop_path),
+                str(crop_paths[track_id]),
                 fourcc,
                 fps,
                 (crop_size, crop_size),
             )
+
             if not writer.isOpened():
-                raise RuntimeError(f"Could not create crop video: {crop_path}")
-            writers[track_id] = writer
+                raise RuntimeError(
+                    f"Could not create crop video: {crop_paths[track_id]}"
+                )
 
-        frame_index = 0
+            cap.set(cv2.CAP_PROP_POS_FRAMES, track_start)
+            frame_index = track_start
 
-        while True:
-            ok, frame = cap.read()
-            if not ok:
-                break
+            try:
+                while frame_index <= track_end:
+                    ok, frame = cap.read()
+                    if not ok:
+                        break
 
-            for track_id, writer in writers.items():
-                annotation = tracks[track_id].get(frame_index)
+                    annotation = tracks[track_id].get(frame_index)
 
-                if annotation is None or annotation.outside == 1:
-                    crop_frame = np.zeros(
-                        (crop_size, crop_size, 3),
-                        dtype=np.uint8,
-                    )
-                else:
-                    x1, y1, x2, y2 = add_padding(
-                        annotation=annotation,
-                        frame_width=frame_width,
-                        frame_height=frame_height,
-                        padding=padding,
-                    )
-                    dog_crop = frame[y1:y2, x1:x2]
-                    crop_frame = letterbox(dog_crop, crop_size)
+                    if annotation is None or annotation.outside == 1:
+                        crop_frame = np.zeros(
+                            (crop_size, crop_size, 3),
+                            dtype=np.uint8,
+                        )
+                    else:
+                        x1, y1, x2, y2 = add_padding(
+                            annotation=annotation,
+                            frame_width=frame_width,
+                            frame_height=frame_height,
+                            padding=padding,
+                        )
+                        dog_crop = frame[y1:y2, x1:x2]
+                        crop_frame = letterbox(dog_crop, crop_size)
 
-                writer.write(crop_frame)
+                    writer.write(crop_frame)
+                    frame_index += 1
 
-            frame_index += 1
+            finally:
+                writer.release()
+
+            # Track the total frames read across all tracks for the summary.
+            # Use the last track's end as a proxy for total video length.
+            frame_count = max(frame_count, frame_index)
 
     finally:
         cap.release()
-        for writer in writers.values():
-            writer.release()
 
-    if reported_frames > 0 and frame_index != reported_frames:
+    # Re-derive total frame count from video properties for the duration check.
+    if reported_frames > 0 and frame_count != reported_frames:
         print(
-            f"WARNING: OpenCV reported {reported_frames} frames but read "
-            f"{frame_index} frames.",
+            f"WARNING: OpenCV reported {reported_frames} frames but last "
+            f"track read up to frame {frame_count}.",
             file=sys.stderr,
         )
 
-    return fps, frame_width, frame_height, frame_index, crop_paths
+    # Use reported_frames for duration if available, else use what we read.
+    total_frames = reported_frames if reported_frames > 0 else frame_count
+
+    return fps, frame_width, frame_height, total_frames, crop_paths
 
 
 def get_visible_same_label_segments(
@@ -517,7 +529,8 @@ def write_training_windows(
     clip_name: str,
     tracks: Dict[int, Dict[int, Annotation]],
     crop_paths: Dict[int, Path],
-    audio_path: Path,
+
+    audio_paths: Dict[int, Path],
     clip_output_dir: Path,
     fps: float,
     window_seconds: float,
@@ -568,7 +581,8 @@ def write_training_windows(
                     "crop_path": crop_paths[track_id]
                         .relative_to(clip_output_dir)
                         .as_posix(),
-                    "audio_path": audio_path
+
+                    "audio_path": audio_paths[track_id]
                         .relative_to(clip_output_dir)
                         .as_posix(),
                     "needs_padding": needs_padding,
@@ -600,7 +614,7 @@ def write_training_windows(
 
 
 def check_wav_duration(wav_path: Path, video_duration: float) -> None:
-    """Best-effort warning only. The WAV is still copied if this check fails."""
+    """Best-effort warning only. The WAV is still used if this check fails."""
     try:
         with wave.open(str(wav_path), "rb") as wav_file:
             wav_duration = wav_file.getnframes() / wav_file.getframerate()
@@ -657,19 +671,61 @@ def process(
         track_remap=track_remap,
     )
 
-    fps, width, height, frame_count, crop_paths = create_crop_videos(
+    track_bounds: Dict[int, Tuple[int, int]] = {}
+
+    for track_id, track_frames in tracks.items():
+        visible_frames = [
+            ann.frame
+            for ann in track_frames.values()
+            if ann.outside == 0
+        ]
+
+        if not visible_frames:
+            continue
+
+        track_bounds[track_id] = (
+            min(visible_frames),
+            max(visible_frames),
+        )
+
+    fps, width, height, total_frames, crop_paths = create_crop_videos(
         video_path=video_path,
         tracks=tracks,
+        track_bounds=track_bounds,
         crops_dir=crops_dir,
         padding=padding,
         crop_size=crop_size,
     )
 
-    output_wav_path = audio_dir / f"{clip_name}.wav"
-    shutil.copy2(source_wav_path, output_wav_path)
 
-    video_duration = frame_count / fps
-    check_wav_duration(output_wav_path, video_duration)
+    video_duration = total_frames / fps
+    check_wav_duration(source_wav_path, video_duration)
+
+    # Trim WAV per track using ffmpeg
+    audio_paths: Dict[int, Path] = {}
+
+    for track_id, (start_frame, end_frame) in track_bounds.items():
+        start_sec = start_frame / fps
+        end_sec = (end_frame + 1) / fps
+
+        output_wav_path = audio_dir / f"{clip_name}_track_{track_id}.wav"
+
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(source_wav_path),
+                "-ss",
+                str(start_sec),
+                "-to",
+                str(end_sec),
+                str(output_wav_path),
+            ],
+            check=True,
+        )
+
+        audio_paths[track_id] = output_wav_path
 
     windows_csv = clip_output_dir / "training_windows.csv"
     window_count = write_training_windows(
@@ -677,7 +733,8 @@ def process(
         clip_name=clip_name,
         tracks=tracks,
         crop_paths=crop_paths,
-        audio_path=output_wav_path,
+
+        audio_paths=audio_paths,
         clip_output_dir=clip_output_dir,
         fps=fps,
         window_seconds=window_seconds,
@@ -689,7 +746,7 @@ def process(
     print("Done.")
     print(f"Resolution:       {width}x{height}")
     print(f"FPS:              {fps:.6f}")
-    print(f"Frames read:      {frame_count}")
+    print(f"Frames (total):   {total_frames}")
     print(f"Dog crop videos:  {len(crop_paths)}")
     print(f"Training windows: {window_count}")
     print(f"Output:           {clip_output_dir}")
@@ -700,8 +757,8 @@ def process(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Create moving dog crop videos, copy aligned WAV audio, and create "
-            "minimal synchronized training-window metadata from CVAT XML."
+            "Create moving dog crop videos, trim aligned WAV audio per track, "
+            "and create minimal synchronized training-window metadata from CVAT XML."
         )
     )
 
