@@ -27,3 +27,5 @@ sentences.json
 bark_annotation_outputs/
 processed/
 *.json
+files/cvats/
+unique_dog_counts.csv
